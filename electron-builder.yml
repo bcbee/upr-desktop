@@ -1,0 +1,65 @@
+appId: com.universalpresenterremote.desktop
+productName: Universal Presenter Remote
+copyright: Copyright © 2026 Brendan Boyle
+
+directories:
+  buildResources: build
+  output: release
+
+# Pack the electron-vite output + node_modules; drop TS source & maps.
+files:
+  - out/**/*
+  - package.json
+  - "!**/*.{ts,tsx,map}"
+
+asar: true
+# The Windows native keystroke addon must live outside the asar so dlopen works.
+asarUnpack:
+  - "**/node_modules/send-keys-native-windows/**"
+
+# Rebuild native modules against the Electron ABI (compiles send-keys-native-windows).
+npmRebuild: true
+
+mac:
+  category: public.app-category.productivity
+  # zip is REQUIRED for electron-updater on macOS (Squirrel.Mac downloads the zip).
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+    - target: zip
+      arch: [arm64, x64]
+  artifactName: upr-desktop-${version}-${arch}-mac.${ext}
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  notarize: true
+  extendInfo:
+    NSAppleEventsUsageDescription: >-
+      Universal Presenter Remote sends arrow-key presses to your presentation
+      software to advance and reverse slides.
+
+dmg:
+  artifactName: upr-desktop-${version}-${arch}-mac.${ext}
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+
+nsis:
+  artifactName: upr-desktop-${version}-setup.${ext}
+  oneClick: true
+  perMachine: false
+
+publish:
+  provider: github
+  owner: brendancboyle
+  repo: upr-desktop

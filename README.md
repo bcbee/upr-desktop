@@ -1,185 +1,215 @@
-<img src="internals/img/erb-banner.png" width="100%" />
+# Universal Presenter Remote — Desktop
 
-<br>
+Control your presentations from any platform. UPR Desktop pairs with the
+Universal Presenter Remote phone/web remote: enter the 6‑digit session token
+shown by the remote, and the desktop app advances/reverses your slides by sending
+arrow‑key presses to whatever presentation software is in focus (Keynote,
+PowerPoint, Google Slides, …).
 
-<p>
-  Electron React Boilerplate uses <a href="http://electron.atom.io/">Electron</a>, <a href="https://facebook.github.io/react/">React</a>, <a href="https://github.com/reactjs/redux">Redux</a>, <a href="https://github.com/reactjs/react-router">React Router</a>, <a href="http://webpack.github.io/docs/">Webpack</a> and <a href="https://github.com/gaearon/react-hot-loader">React Hot Loader</a> for rapid application development (HMR).
-</p>
+This is a clean‑sheet rewrite on the latest Electron + TypeScript, replacing the
+old electron‑react‑boilerplate stack. It keeps the original UI, behaviour, and
+server protocol while modernising the security model and build pipeline.
 
-<br>
+- **Runtime:** Electron (latest), React 19, TypeScript
+- **Bundler:** [electron‑vite](https://electron-vite.org)
+- **Packaging / updates:** [electron‑builder](https://www.electron.build) +
+  [electron‑updater](https://www.electron.build/auto-update) via GitHub Releases
+- **Platforms:** macOS (arm64 + x64), Windows (x64; arm64 best‑effort)
 
-<div align="center">
-  <a href="https://facebook.github.io/react/"><img src="./internals/img/react-padded-90.png" /></a>
-  <a href="https://webpack.github.io/"><img src="./internals/img/webpack-padded-90.png" /></a>
-  <a href="http://redux.js.org/"><img src="./internals/img/redux-padded-90.png" /></a>
-  <a href="https://github.com/ReactTraining/react-router"><img src="./internals/img/react-router-padded-90.png" /></a>
-  <a href="https://flowtype.org/"><img src="./internals/img/flow-padded-90.png" /></a>
-  <a href="http://eslint.org/"><img src="./internals/img/eslint-padded-90.png" /></a>
-  <a href="https://facebook.github.io/jest/"><img src="./internals/img/jest-padded-90.png" /></a>
-  <a href="https://yarnpkg.com/"><img src="./internals/img/yarn-padded-90.png" /></a>
-</div>
+## Architecture
 
-<hr />
-<br />
+All privileged work runs in the **main process**; the renderer is a sandboxed
+React UI that talks to main over a typed `contextBridge` preload (`window.upr`).
+The renderer has no Node/Electron access (`contextIsolation: true`,
+`nodeIntegration: false`, `sandbox: true`).
 
-<div align="center">
-
-[![Build Status][travis-image]][travis-url]
-[![Appveyor Build Status][appveyor-image]][appveyor-url]
-[![Dependency Status][david-image]][david-url]
-[![DevDependency Status][david-dev-image]][david-dev-url]
-[![Github Tag][github-tag-image]][github-tag-url]
-
-[![Join the community on Spectrum](https://withspectrum.github.io/badge/badge.svg)](https://spectrum.chat/electron-react-blpt)
-[![OpenCollective](https://opencollective.com/electron-react-boilerplate/backers/badge.svg)](#backers)
-[![OpenCollective](https://opencollective.com/electron-react-boilerplate/sponsors/badge.svg)](#sponsors)
-[![Good first issues open][good-first-issue-image]][good-first-issue-url]
-[![StackOverflow](http://img.shields.io/badge/stackoverflow-electron_react_boilerplate-blue.svg)](http://stackoverflow.com/questions/tagged/electron-react-boilerplate)
-
-</div>
-
-<div align="center">
-
-![Electron Boilerplate Demo](https://cloud.githubusercontent.com/assets/3382565/10557547/b1f07a4e-74e3-11e5-8d27-79ab6947d429.gif)
-
-</div>
-
-## Install
-
-- **If you have installation or compilation issues with this project, please see [our debugging guide](https://github.com/electron-react-boilerplate/electron-react-boilerplate/issues/400)**
-
-First, clone the repo via git:
-
-```bash
-git clone --depth 1 --single-branch --branch master https://github.com/electron-react-boilerplate/electron-react-boilerplate.git your-project-name
+```
+src/
+  main/        Electron main: window, menu, auto-update, IPC, and all logic:
+               session (HTTP join), socket (Socket.IO listener), verify
+               (RSA-SHA256 signature check), keys (native keystrokes)
+  preload/     contextBridge → window.upr
+  renderer/    React UI (Login + Present screens), CSS modules
+  shared/      types shared between main and renderer
+build/         electron-builder resources (icons, entitlements)
+docs/          SOCKETIO_UPGRADE.md — backward-compatible Socket.IO v4 plan
 ```
 
-And then install the dependencies with yarn.
+Keystroke injection uses two local, first‑party modules kept as `file:`
+dependencies:
+
+- [`send-keys-native`](../send-keys-native) — pure JS; macOS sends arrow keys via
+  `osascript` (System Events), Windows delegates to the addon below.
+- [`send-keys-native-windows`](../send-keys-native-windows) — an N‑API
+  (`node-addon-api`) addon wrapping the Win32 SendInput/keybd_event APIs. It is
+  only installed/compiled on Windows (`"os": ["win32"]`, optional dependency).
+
+## Prerequisites
+
+- Node.js 20+ and npm
+- macOS builds: Xcode Command Line Tools (`xcode-select --install`)
+- Windows builds: Visual Studio Build Tools with the **Desktop development with
+  C++** workload (to compile `send-keys-native-windows`)
+
+## Development
 
 ```bash
-$ cd your-project-name
-$ yarn
+npm install
+npm run dev          # electron-vite dev server with HMR
+npm run typecheck    # tsc for main/preload and renderer
 ```
 
-## Starting Development
+> On macOS the app needs Automation permission to drive System Events. The first
+> keystroke triggers a system prompt; grant it (or enable it later under System
+> Settings → Privacy & Security → Automation / Accessibility).
 
-Start the app in the `dev` environment. This starts the renderer process in [**hot-module-replacement**](https://webpack.js.org/guides/hmr-react/) mode and starts a webpack dev server that sends hot updates to the renderer process:
+## Building & packaging
 
 ```bash
-$ yarn dev
+npm run build        # electron-vite build → out/
+npm run package      # build + electron-builder (no publish) → release/
+npm run release      # build + electron-builder --publish always (GitHub Releases)
 ```
 
-## Packaging for Production
+`electron-builder.yml` holds the packaging config (appId
+`com.universalpresenterremote.desktop`, mac dmg+zip for both arches, Windows
+nsis, GitHub publish target).
 
-To package apps for the local platform:
+## Auto‑update
+
+Updates use `electron-updater` against **GitHub Releases**. On launch (packaged
+builds only) the app calls `autoUpdater.checkForUpdatesAndNotify()` and installs
+on download; the **Help → Check For Updates** / **Enable Beta Updates** menu
+items expose manual and prerelease checks.
+
+electron‑builder publishes the files the updater needs to each release:
+
+| Platform | Metadata | Payload | Integrity |
+| --- | --- | --- | --- |
+| macOS | `latest-mac.yml` | `*-mac.zip` (Squirrel.Mac uses the zip, not the dmg) | `*.zip.blockmap` |
+| Windows | `latest.yml` | `*-setup.exe` | `*.exe.blockmap` |
+
+The mac **zip target is required** for macOS auto‑update — a dmg‑only build will
+not update. A new release's version must be strictly greater than the installed
+one.
+
+## Release process & the v1.3.x → 2.0.0 migration
+
+The previously shipped build (v1.3.1) was **unsigned** on macOS. Squirrel.Mac
+refuses to apply an update from an unsigned app to a newly signed+notarized one,
+so we migrate in two tracks:
+
+1. **Transitional bridge — `1.3.2`, unsigned.** The rewrite, version‑stamped
+   1.3.2 and built without signing/notarization, published to the GitHub
+   auto‑update feed. Windows installs update to it seamlessly; macOS installs
+   attempt it (best‑effort) and, on macOS, show an in‑app notice directing the
+   user to download the signed build from the website. Build it with:
+
+   ```bash
+   npm run build:bridge   # sets UPR_MIGRATION_NOTICE=true (shows the macOS notice)
+   CSC_IDENTITY_AUTO_DISCOVERY=false npx electron-builder --mac --win \
+     --publish always \
+     --config.mac.notarize=false --config.mac.hardenedRuntime=false
+   ```
+
+2. **Signed line — `2.0.0`, signed + notarized.** Bump `version` to `2.0.0`,
+   build normally (`npm run release`, flag off). Distribute from the website now;
+   promote it to the GitHub feed once the bridge has circulated, so a fresh
+   v1.3.1 user doesn't jump straight to a signed build and hit the same
+   discontinuity. From 2.0.0 onward macOS auto‑update works normally
+   (signed → signed); Windows updates seamlessly throughout.
+
+> Some macOS v1.3.1 users whose unsigned auto‑update never applied cannot be
+> reached by the bridge; point them to the website download via a banner/email.
+
+Keep the same signing identity/Team ID across releases — changing it re‑triggers
+the macOS discontinuity.
+
+## macOS code signing & notarization
+
+Notarization is required for a Gatekeeper‑friendly, auto‑updatable macOS build.
+electron‑builder performs it automatically during a signed build via its built‑in
+`mac.notarize: true` (which drives `@electron/notarize` + `notarytool` — no extra
+package or `afterSign` hook needed).
+
+### 1. Credentials
+
+You need an Apple Developer account and a **Developer ID Application**
+certificate exported as a `.p12`. Provide it and your notarization credentials as
+environment variables (e.g. in CI secrets):
 
 ```bash
-$ yarn package
+# Signing certificate (Developer ID Application)
+export CSC_LINK="base64-of-your-DeveloperID.p12"     # or a file path
+export CSC_KEY_PASSWORD="p12-password"
+
+# Notarization — Apple ID + app-specific password
+export APPLE_ID="brendan@dbztech.com"
+export APPLE_APP_SPECIFIC_PASSWORD="xxxx-xxxx-xxxx-xxxx"  # appleid.apple.com → App-Specific Passwords
+export APPLE_TEAM_ID="XXXXXXXXXX"                          # 10-char Team ID
 ```
 
-## Docs
+(Alternatively use an App Store Connect API key: `APPLE_API_KEY` /
+`APPLE_API_KEY_ID` / `APPLE_API_ISSUER`.)
 
-See our [docs and guides here](https://electron-react-boilerplate.js.org/docs/installation)
+### 2. Build (signs + notarizes + staples automatically)
 
-## Donations
+```bash
+npm run release      # or: npm run package, with the env vars above set
+```
 
-**Donations will ensure the following:**
+With the credentials present and `notarize: true` in `electron-builder.yml`, the
+build signs with the hardened runtime, submits to Apple via `notarytool`, waits,
+and staples the ticket to the `.app` before zipping/dmg’ing.
 
-- 🔨 Long term maintenance of the project
-- 🛣 Progress on the [roadmap](https://electron-react-boilerplate.js.org/docs/roadmap)
-- 🐛 Quick responses to bug reports and help requests
+### 3. Manual notarization / verification (fallback & debugging)
 
-## Backers
+```bash
+# Submit a built artifact and wait for the result
+xcrun notarytool submit "release/upr-desktop-2.0.0-arm64-mac.zip" \
+  --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" \
+  --password "$APPLE_APP_SPECIFIC_PASSWORD" --wait
 
-Support us with a monthly donation and help us continue our activities. [[Become a backer](https://opencollective.com/electron-react-boilerplate#backer)]
+# Staple the ticket to the app/dmg
+xcrun stapler staple "release/upr-desktop-2.0.0-arm64-mac.dmg"
 
-<a href="https://opencollective.com/electron-react-boilerplate/backer/0/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/0/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/1/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/1/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/2/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/2/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/3/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/3/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/4/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/4/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/5/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/5/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/6/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/6/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/7/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/7/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/8/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/8/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/9/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/9/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/10/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/10/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/11/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/11/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/12/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/12/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/13/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/13/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/14/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/14/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/15/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/15/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/16/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/16/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/17/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/17/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/18/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/18/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/19/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/19/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/20/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/20/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/21/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/21/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/22/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/22/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/23/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/23/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/24/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/24/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/25/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/25/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/26/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/26/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/27/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/27/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/28/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/28/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/backer/29/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/backer/29/avatar.svg"></a>
+# Verify signature, stapling, and Gatekeeper acceptance
+xcrun stapler validate "release/upr-desktop-2.0.0-arm64-mac.dmg"
+spctl -a -vvv -t install "release/mac-arm64/Universal Presenter Remote.app"
+codesign --verify --deep --strict --verbose=2 \
+  "release/mac-arm64/Universal Presenter Remote.app"
+```
 
-## Sponsors
+### Entitlements & runtime permission
 
-Become a sponsor and get your logo on our README on Github with a link to your site. [[Become a sponsor](https://opencollective.com/electron-react-boilerplate-594#sponsor)]
+`build/entitlements.mac.plist` grants the hardened‑runtime entitlements Electron
+needs plus `com.apple.security.automation.apple-events` (required to drive System
+Events for keystrokes). `Info.plist` carries `NSAppleEventsUsageDescription`
+(set via `mac.extendInfo`), which is the message shown in the macOS Automation
+permission prompt — without it the prompt is suppressed and keystrokes silently
+fail under a notarized build. At runtime the first keystroke triggers that
+prompt; if denied, the app surfaces the permission notice and the user can grant
+it under **System Settings → Privacy & Security → Automation / Accessibility**.
 
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/0/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/0/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/1/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/1/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/2/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/2/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/3/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/3/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/4/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/4/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/5/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/5/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/6/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/6/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/7/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/7/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/8/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/8/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/9/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/9/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/10/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/10/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/11/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/11/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/12/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/12/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/13/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/13/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/14/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/14/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/15/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/15/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/16/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/16/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/17/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/17/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/18/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/18/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/19/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/19/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/20/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/20/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/21/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/21/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/22/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/22/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/23/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/23/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/24/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/24/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/25/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/25/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/26/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/26/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/27/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/27/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/28/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/28/avatar.svg"></a>
-<a href="https://opencollective.com/electron-react-boilerplate/sponsor/29/website" target="_blank"><img src="https://opencollective.com/electron-react-boilerplate/sponsor/29/avatar.svg"></a>
+## Windows builds
 
-## Maintainers
+`electron-builder --win` produces an NSIS installer. `npmRebuild` runs
+`@electron/rebuild`, which compiles `send-keys-native-windows` against the target
+Electron ABI; the resulting `.node` is kept outside the asar (`asarUnpack`) so it
+can be loaded at runtime. Build on Windows (or a Windows CI runner) so the native
+toolchain is available.
 
-- [Vikram Rangaraj](https://github.com/vikr01)
-- [Amila Welihinda](https://github.com/amilajack)
-- [C. T. Lin](https://github.com/chentsulin)
-- [Jhen-Jie Hong](https://github.com/jhen0409)
+**Windows on ARM (arm64)** is best‑effort: add `arm64` to the `win` target in
+`electron-builder.yml` and build with `--win --arm64`, but the runner needs the
+Visual Studio **ARM64 C++ build tools** to compile the native addon. Until that
+is set up, ship x64 — it runs on Windows‑on‑ARM under emulation.
+
+## Socket.IO
+
+The app pins `socket.io-client@2` to match the deployed server. See
+[docs/SOCKETIO_UPGRADE.md](docs/SOCKETIO_UPGRADE.md) for the backward‑compatible
+plan to move the whole stack to Socket.IO v4 without breaking installed clients.
 
 ## License
 
-MIT © [Electron React Boilerplate](https://github.com/electron-react-boilerplate)
-
-[npm-image]: https://img.shields.io/npm/v/electron-react-boilerplate.svg?style=flat-square
-[github-tag-image]: https://img.shields.io/github/tag/electron-react-boilerplate/electron-react-boilerplate.svg?label=version
-[github-tag-url]: https://github.com/electron-react-boilerplate/electron-react-boilerplate/releases/latest
-[travis-image]: https://travis-ci.com/electron-react-boilerplate/electron-react-boilerplate.svg?branch=master
-[travis-url]: https://travis-ci.com/electron-react-boilerplate/electron-react-boilerplate
-[appveyor-image]: https://ci.appveyor.com/api/projects/status/4m972s6e4nf52hx6/branch/master?svg=true
-[appveyor-url]: https://ci.appveyor.com/project/electron-react-boilerplate/electron-react-boilerplate/branch/master
-[david-image]: https://img.shields.io/david/electron-react-boilerplate/electron-react-boilerplate.svg
-[david-url]: https://david-dm.org/electron-react-boilerplate/electron-react-boilerplate
-[david-dev-image]: https://img.shields.io/david/dev/electron-react-boilerplate/electron-react-boilerplate.svg?label=devDependencies
-[david-dev-url]: https://david-dm.org/electron-react-boilerplate/electron-react-boilerplate?type=dev
-[good-first-issue-image]: https://img.shields.io/github/issues/electron-react-boilerplate/electron-react-boilerplate/good%20first%20issue.svg?label=good%20first%20issues
-[good-first-issue-url]: https://github.com/electron-react-boilerplate/electron-react-boilerplate/issues?q=is%3Aopen+is%3Aissue+label%3A"good+first+issue"
+MIT © Brendan Boyle
