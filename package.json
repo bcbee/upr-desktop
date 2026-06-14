@@ -20,6 +20,7 @@
     "url": "https://github.com/brendancboyle/upr-desktop/issues"
   },
   "scripts": {
+    "postinstall": "node node_modules/electron/install.js",
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "build:bridge": "UPR_MIGRATION_NOTICE=true electron-vite build",
