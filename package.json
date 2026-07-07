@@ -23,7 +23,7 @@
     "postinstall": "node node_modules/electron/install.js",
     "dev": "electron-vite dev",
     "build": "electron-vite build",
-    "build:bridge": "UPR_MIGRATION_NOTICE=true electron-vite build",
+    "build:bridge": "electron-vite build --mode bridge",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",

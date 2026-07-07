@@ -10,10 +10,10 @@ export function initAutoUpdates(): void {
   autoUpdater.on('error', error => {
     log.error('autoUpdater error', error)
   })
-  // Restore the install-on-download flow the original app had commented out.
-  autoUpdater.on('update-downloaded', () => {
-    autoUpdater.quitAndInstall()
-  })
+  // Downloaded updates install on quit (autoInstallOnAppQuit, default true).
+  // Never quitAndInstall() here: the check runs at launch, so the download can
+  // finish right as the user starts presenting, and a forced restart would kill
+  // an active presentation.
 
   if (app.isPackaged) {
     log.info('Checking for updates...')

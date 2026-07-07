@@ -78,9 +78,11 @@ nsis, GitHub publish target).
 ## Auto‑update
 
 Updates use `electron-updater` against **GitHub Releases**. On launch (packaged
-builds only) the app calls `autoUpdater.checkForUpdatesAndNotify()` and installs
-on download; the **Help → Check For Updates** / **Enable Beta Updates** menu
-items expose manual and prerelease checks.
+builds only) the app calls `autoUpdater.checkForUpdatesAndNotify()`; a downloaded
+update installs when the user quits the app (`autoInstallOnAppQuit`), never by
+force-restarting — an update must not interrupt a live presentation. The
+**Help → Check For Updates** / **Enable Beta Updates** menu items expose manual
+and prerelease checks.
 
 electron‑builder publishes the files the updater needs to each release:
 
@@ -103,13 +105,27 @@ so we migrate in two tracks:
    1.3.2 and built without signing/notarization, published to the GitHub
    auto‑update feed. Windows installs update to it seamlessly; macOS installs
    attempt it (best‑effort) and, on macOS, show an in‑app notice directing the
-   user to download the signed build from the website. Build it with:
+   user to download the signed build from the website.
+
+   The bridge is built **locally, once per OS** (the Windows native addon can
+   only compile on Windows, and the release workflow deliberately refuses
+   `1.3.x` tags). Attach both platforms' artifacts to the same `v1.3.2` GitHub
+   release.
+
+   On macOS:
 
    ```bash
-   npm run build:bridge   # sets UPR_MIGRATION_NOTICE=true (shows the macOS notice)
-   CSC_IDENTITY_AUTO_DISCOVERY=false npx electron-builder --mac --win \
+   npm run build:bridge   # electron-vite build --mode bridge (shows the macOS notice)
+   CSC_IDENTITY_AUTO_DISCOVERY=false npx electron-builder --mac \
      --publish always \
      --config.mac.notarize=false --config.mac.hardenedRuntime=false
+   ```
+
+   On Windows (the migration notice is macOS‑only, so the plain build is fine):
+
+   ```powershell
+   npm run build
+   npx electron-builder --win --publish always
    ```
 
 2. **Signed line — `2.0.0`, signed + notarized.** Bump `version` to `2.0.0`,
