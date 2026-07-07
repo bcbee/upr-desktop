@@ -6,6 +6,12 @@ directories:
   buildResources: build
   output: release
 
+extraResources:
+  - from: build/icon.ico
+    to: icon.ico
+  - from: build/icon.png
+    to: icon.png
+
 # Pack the electron-vite output + node_modules; drop TS source & maps.
 files:
   - out/**/*
@@ -21,6 +27,7 @@ asarUnpack:
 npmRebuild: true
 
 mac:
+  icon: build/icon.icns
   category: public.app-category.productivity
   # zip is REQUIRED for electron-updater on macOS (Squirrel.Mac downloads the zip).
   target:
@@ -50,6 +57,7 @@ dmg:
       path: /Applications
 
 win:
+  icon: build/icon.ico
   target:
     - target: nsis
       arch: [x64]

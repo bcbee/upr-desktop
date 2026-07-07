@@ -12,11 +12,23 @@ log.initialize()
 
 let mainWindow: BrowserWindow | null = null
 
+function getWindowIconPath(): string | undefined {
+  if (process.platform === 'darwin') return undefined
+
+  const iconFile = process.platform === 'win32' ? 'icon.ico' : 'icon.png'
+  return app.isPackaged
+    ? join(process.resourcesPath, iconFile)
+    : join(__dirname, '../../build', iconFile)
+}
+
 function createWindow(): void {
+  const icon = getWindowIconPath()
+
   mainWindow = new BrowserWindow({
     width: 1024,
     height: 728,
     show: false,
+    ...(icon ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,

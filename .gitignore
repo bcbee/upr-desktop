@@ -5,7 +5,13 @@ node_modules/
 out/
 release/
 dist/
-build/
+
+# Electron Builder resources are source assets and must be tracked.
+build/*
+!build/icon.icns
+!build/icon.ico
+!build/icon.png
+!build/entitlements.mac.plist
 
 # Logs
 *.log
