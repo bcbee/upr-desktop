@@ -16,6 +16,11 @@ export async function joinSession(token: string): Promise<number> {
       upr_platform: process.platform
     }
   })
+  if (!res.ok) {
+    log.warn(`joinSession(${token}) failed with HTTP ${res.status}`)
+    throw new Error(`HTTP ${res.status} ${res.statusText}`.trim())
+  }
+
   const text = (await res.text()).trim()
   const value = Number.parseInt(text, 10)
   log.info(`joinSession(${token}) -> "${text}"`)
