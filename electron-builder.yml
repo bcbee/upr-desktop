@@ -6,6 +6,8 @@ directories:
   buildResources: build
   output: release
 
+afterPack: build/verify-native-deps.cjs
+
 extraResources:
   - from: build/icon.ico
     to: icon.ico
@@ -16,6 +18,10 @@ extraResources:
 files:
   - out/**/*
   - package.json
+  # CI has previously published a Windows artifact where electron-builder copied
+  # the JS wrapper but skipped this optional file: dependency. Include it
+  # explicitly so the runtime require is satisfied in the installed app.
+  - node_modules/send-keys-native-windows/**/*
   - "!**/*.{ts,tsx,map}"
   # send-keys-native is a file: link to a sibling checkout; electron-builder copies
   # its real directory wholesale, including any locally installed dev node_modules

@@ -112,7 +112,12 @@ jobs:
           node-version: 24
       - name: Install (compiles the native addon for the Electron ABI)
         working-directory: upr-desktop
-        run: npm install
+        run: npm install --include=optional
+      - name: Verify Windows native dependency installed
+        working-directory: upr-desktop
+        shell: pwsh
+        run: |
+          node -e "require.resolve('send-keys-native-windows')"
       - name: Build
         working-directory: upr-desktop
         run: npm run build

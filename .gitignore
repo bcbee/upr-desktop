@@ -12,6 +12,7 @@ build/*
 !build/icon.ico
 !build/icon.png
 !build/entitlements.mac.plist
+!build/verify-native-deps.cjs
 
 # Logs
 *.log
