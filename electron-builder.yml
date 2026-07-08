@@ -17,6 +17,11 @@ files:
   - out/**/*
   - package.json
   - "!**/*.{ts,tsx,map}"
+  # send-keys-native is a file: link to a sibling checkout; electron-builder copies
+  # its real directory wholesale, including any locally installed dev node_modules
+  # (jest etc.). Exclude them — send-keys-native-windows resolves from the app's
+  # root node_modules, where it is a direct optionalDependency.
+  - "!**/node_modules/send-keys-native/node_modules/**"
 
 asar: true
 # The Windows native keystroke addon must live outside the asar so dlopen works.

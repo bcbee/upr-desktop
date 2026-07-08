@@ -1,7 +1,7 @@
 {
   "name": "upr-desktop",
   "productName": "Universal Presenter Remote",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "Control your presentations from any platform.",
   "homepage": "https://universalpresenterremote.com",
   "license": "MIT",
@@ -37,6 +37,9 @@
     "react-dom": "19.2.7",
     "send-keys-native": "file:../send-keys-native",
     "socket.io-client": "2.5.0"
+  },
+  "optionalDependencies": {
+    "send-keys-native-windows": "file:../send-keys-native-windows"
   },
   "devDependencies": {
     "@types/node": "25.9.2",
