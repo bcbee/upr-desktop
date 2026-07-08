@@ -30,11 +30,12 @@ mac:
   icon: build/icon.icns
   category: public.app-category.productivity
   # zip is REQUIRED for electron-updater on macOS (Squirrel.Mac downloads the zip).
+  # Universal macOS artifacts let Rosetta x64 installs update into a native build.
   target:
     - target: dmg
-      arch: [arm64, x64]
+      arch: [universal]
     - target: zip
-      arch: [arm64, x64]
+      arch: [universal]
   artifactName: upr-desktop-${version}-${arch}-mac.${ext}
   hardenedRuntime: true
   gatekeeperAssess: false

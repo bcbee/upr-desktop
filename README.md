@@ -14,7 +14,7 @@ server protocol while modernising the security model and build pipeline.
 - **Bundler:** [electron‑vite](https://electron-vite.org)
 - **Packaging / updates:** [electron‑builder](https://www.electron.build) +
   [electron‑updater](https://www.electron.build/auto-update) via GitHub Releases
-- **Platforms:** macOS (arm64 + x64), Windows (x64; arm64 best‑effort)
+- **Platforms:** macOS (universal arm64 + x64), Windows (x64; arm64 best‑effort)
 
 ## Architecture
 
@@ -72,8 +72,8 @@ npm run release      # build + electron-builder --publish always (GitHub Release
 ```
 
 `electron-builder.yml` holds the packaging config (appId
-`com.universalpresenterremote.desktop`, mac dmg+zip for both arches, Windows
-nsis, GitHub publish target).
+`com.universalpresenterremote.desktop`, universal mac dmg+zip, Windows nsis,
+GitHub publish target).
 
 ## Auto‑update
 
