@@ -72,7 +72,7 @@ jobs:
           path: send-keys-native-windows
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version: 24
       - name: Install
         working-directory: upr-desktop
         run: npm install
@@ -109,7 +109,7 @@ jobs:
           path: send-keys-native-windows
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version: 24
       - name: Install (compiles the native addon for the Electron ABI)
         working-directory: upr-desktop
         run: npm install
