@@ -1,8 +1,0 @@
-extends: electron-builder.yml
-
-# The v1.3.x bridge must stay unsigned on macOS so unsigned 1.3.1 clients can
-# update to it before users move to the signed 2.x line.
-mac:
-  identity: null
-  hardenedRuntime: false
-  notarize: false

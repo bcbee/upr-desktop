@@ -3,7 +3,6 @@ import styles from './Login.module.css'
 import { TokenForm } from '../components/TokenForm'
 import { ConnectButton } from '../components/ConnectButton'
 import { Modal } from '../components/Modal'
-import { MigrationNotice } from '../components/MigrationNotice'
 import Logo from '../assets/icon.png'
 import Banner from '../assets/banner.png'
 
@@ -36,8 +35,6 @@ export function Login({
   useEffect(() => {
     void checkPermissions()
   }, [])
-
-  const showMigration = window.upr.platform === 'darwin' && __UPR_MIGRATION_NOTICE__
 
   return (
     <div className={styles.container}>
@@ -76,8 +73,6 @@ export function Login({
           </div>
         </Modal>
       )}
-
-      {showMigration && <MigrationNotice />}
     </div>
   )
 }

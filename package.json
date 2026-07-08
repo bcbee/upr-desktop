@@ -1,7 +1,7 @@
 {
   "name": "upr-desktop",
   "productName": "Universal Presenter Remote",
-  "version": "1.3.3",
+  "version": "2.0.0",
   "description": "Control your presentations from any platform.",
   "homepage": "https://universalpresenterremote.com",
   "license": "MIT",
@@ -23,13 +23,10 @@
     "postinstall": "node node_modules/electron/install.js",
     "dev": "electron-vite dev",
     "build": "electron-vite build",
-    "build:bridge": "electron-vite build --mode bridge",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "package": "npm run build && electron-builder --publish never",
-    "package:bridge": "npm run build:bridge && electron-builder --config electron-builder.bridge.yml --publish never",
-    "release:bridge": "npm run build:bridge && electron-builder --config electron-builder.bridge.yml --publish always",
     "release": "npm run build && electron-builder --publish always"
   },
   "dependencies": {
