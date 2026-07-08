@@ -27,7 +27,7 @@ The renderer has no Node/Electron access (`contextIsolation: true`,
 src/
   main/        Electron main: window, menu, auto-update, IPC, and all logic:
                session (HTTP join), socket (Socket.IO listener), verify
-               (RSA-SHA256 signature check), keys (native keystrokes)
+               (RSA-SHA256 signature check), keys (OS keystrokes)
   preload/     contextBridge → window.upr
   renderer/    React UI (Login + Present screens), CSS modules
   shared/      types shared between main and renderer
@@ -35,21 +35,17 @@ build/         electron-builder resources (icons, entitlements)
 docs/          SOCKETIO_UPGRADE.md — backward-compatible Socket.IO v4 plan
 ```
 
-Keystroke injection uses two local, first‑party modules kept as `file:`
-dependencies:
-
-- [`send-keys-native`](../send-keys-native) — pure JS; macOS sends arrow keys via
-  `osascript` (System Events), Windows delegates to the addon below.
-- [`send-keys-native-windows`](../send-keys-native-windows) — an N‑API
-  (`node-addon-api`) addon wrapping the Win32 SendInput/keybd_event APIs. It is
-  only installed/compiled on Windows (`"os": ["win32"]`, optional dependency).
+Keystroke injection lives directly in `src/main/keys.ts`: macOS uses
+`osascript` / System Events, and Windows loads a small app-owned N-API binding
+that calls the Win32 `SendInput` C API for left/right arrows. There are no local
+send-keys packages to install.
 
 ## Prerequisites
 
 - Node.js 20+ and npm
 - macOS builds: Xcode Command Line Tools (`xcode-select --install`)
 - Windows builds: Visual Studio Build Tools with the **Desktop development with
-  C++** workload (to compile `send-keys-native-windows`)
+  C++** workload
 
 ## Development
 
@@ -194,15 +190,14 @@ it under **System Settings → Privacy & Security → Automation / Accessibility
 
 ## Windows builds
 
-`electron-builder --win` produces an NSIS installer. `npmRebuild` runs
-`@electron/rebuild`, which compiles `send-keys-native-windows` against the target
-Electron ABI; the resulting `.node` is kept outside the asar (`asarUnpack`) so it
-can be loaded at runtime. Build on Windows (or a Windows CI runner) so the native
-toolchain is available.
+`electron-builder --win` produces an NSIS installer. Windows keystrokes are sent
+through `native/win-keysender`, a tiny app-owned N-API binding that calls the
+Win32 `SendInput` C API. `npm run build` compiles it on Windows and
+electron-builder copies `keysender.node` into the packaged app resources.
 
 **Windows on ARM (arm64)** is best‑effort: add `arm64` to the `win` target in
 `electron-builder.yml` and build with `--win --arm64`, but the runner needs the
-Visual Studio **ARM64 C++ build tools** to compile the native addon. Until that
+Visual Studio **ARM64 C++ build tools** to compile the native binding. Until that
 is set up, ship x64 — it runs on Windows‑on‑ARM under emulation.
 
 ## Socket.IO

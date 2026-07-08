@@ -1,7 +1,7 @@
 {
   "name": "upr-desktop",
   "productName": "Universal Presenter Remote",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "description": "Control your presentations from any platform.",
   "homepage": "https://universalpresenterremote.com",
   "license": "MIT",
@@ -22,7 +22,8 @@
   "scripts": {
     "postinstall": "node node_modules/electron/install.js",
     "dev": "electron-vite dev",
-    "build": "electron-vite build",
+    "build:native:win": "node scripts/build-windows-keysender.cjs",
+    "build": "npm run build:native:win && electron-vite build",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
@@ -35,11 +36,7 @@
     "electron-updater": "6.8.9",
     "react": "19.2.7",
     "react-dom": "19.2.7",
-    "send-keys-native": "file:../send-keys-native",
     "socket.io-client": "2.5.0"
-  },
-  "optionalDependencies": {
-    "send-keys-native-windows": "file:../send-keys-native-windows"
   },
   "devDependencies": {
     "@types/node": "25.9.2",

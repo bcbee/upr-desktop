@@ -2,11 +2,8 @@ name: release
 
 # Build, sign/notarize, and publish to GitHub Releases on a version tag (e.g. v2.0.0).
 #
-# Prerequisites:
-# - Push the latest send-keys-native and send-keys-native-windows to GitHub; this
-#   workflow checks them out as siblings so the app's `file:../` deps resolve.
-# - Required secrets:
-#     GH_TOKEN                       PAT with `repo` scope (publish + sibling checkout)
+# Required secrets:
+#     GH_TOKEN                       PAT with `repo` scope (publish)
 #     MAC_CSC_LINK                   base64 of the Developer ID Application .p12
 #     MAC_CSC_KEY_PASSWORD           password for that .p12
 #     APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID   notarization creds
@@ -60,16 +57,6 @@ jobs:
       - uses: actions/checkout@v5
         with:
           path: upr-desktop
-      - uses: actions/checkout@v5
-        with:
-          repository: brendancboyle/send-keys-native
-          token: ${{ secrets.GH_TOKEN }}
-          path: send-keys-native
-      - uses: actions/checkout@v5
-        with:
-          repository: brendancboyle/send-keys-native-windows
-          token: ${{ secrets.GH_TOKEN }}
-          path: send-keys-native-windows
       - uses: actions/setup-node@v5
         with:
           node-version: 24
@@ -97,31 +84,12 @@ jobs:
       - uses: actions/checkout@v5
         with:
           path: upr-desktop
-      - uses: actions/checkout@v5
-        with:
-          repository: brendancboyle/send-keys-native
-          token: ${{ secrets.GH_TOKEN }}
-          path: send-keys-native
-      - uses: actions/checkout@v5
-        with:
-          repository: brendancboyle/send-keys-native-windows
-          token: ${{ secrets.GH_TOKEN }}
-          path: send-keys-native-windows
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-      - name: Install (compiles the native addon for the Electron ABI)
+      - name: Install
         working-directory: upr-desktop
-        run: npm install --include=optional
-      - name: Install Windows native dependency
-        working-directory: upr-desktop
-        shell: pwsh
-        run: |
-          # npm 11 on the hosted Windows runner can skip this local optional
-          # dependency even with --include=optional. Install the checked-out
-          # sibling explicitly so electron-builder can package and rebuild it.
-          npm install --no-save ../send-keys-native-windows
-          node -e "require.resolve('send-keys-native-windows')"
+        run: npm install
       - name: Build
         working-directory: upr-desktop
         run: npm run build
