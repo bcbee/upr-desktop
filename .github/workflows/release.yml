@@ -19,13 +19,18 @@ permissions:
   contents: write
 
 jobs:
-  # Artifacts and the update feed (latest*.yml) are stamped with package.json's
-  # version, not the tag — a mismatch publishes a release whose metadata points
-  # at the wrong version, which the installed clients then ignore or mis-download.
-  verify-version:
+  # Two gates before building:
+  # 1. Artifacts and the update feed (latest*.yml) are stamped with package.json's
+  #    version, not the tag - a mismatch publishes a release whose metadata points
+  #    at the wrong version, which the installed clients then ignore or mis-download.
+  # 2. Pre-create ONE draft release. electron-builder creates its draft lazily on
+  #    first upload, and GitHub allows multiple drafts with the same tag name, so
+  #    the parallel macOS/Windows jobs each mint their own draft unless one already
+  #    exists for them to find by tag.
+  prepare:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Tag must match package.json version
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
@@ -34,27 +39,40 @@ jobs:
             echo "::error::Tag v$TAG_VERSION does not match package.json version $PKG_VERSION. Bump package.json (or fix the tag) before releasing."
             exit 1
           fi
+      - name: Create shared draft release
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        # The publish target is brendancboyle/upr-desktop (see electron-builder.yml),
+        # which installed clients' update feeds point at - not necessarily this repo.
+        run: |
+          if gh release view "$GITHUB_REF_NAME" --repo brendancboyle/upr-desktop > /dev/null 2>&1; then
+            echo "Release $GITHUB_REF_NAME already exists; build jobs will upload to it."
+          else
+            gh release create "$GITHUB_REF_NAME" --repo brendancboyle/upr-desktop \
+              --draft --title "$GITHUB_REF_NAME" \
+              --notes "Draft created by CI; electron-builder uploads artifacts here. Review, then publish."
+          fi
 
   macos:
-    needs: verify-version
+    needs: prepare
     runs-on: macos-14 # arm64 runner; builds both arches
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: upr-desktop
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: brendancboyle/send-keys-native
           token: ${{ secrets.GH_TOKEN }}
           path: send-keys-native
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: brendancboyle/send-keys-native-windows
           token: ${{ secrets.GH_TOKEN }}
           path: send-keys-native-windows
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
       - name: Install
         working-directory: upr-desktop
         run: npm install
@@ -73,25 +91,25 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
   windows:
-    needs: verify-version
+    needs: prepare
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: upr-desktop
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: brendancboyle/send-keys-native
           token: ${{ secrets.GH_TOKEN }}
           path: send-keys-native
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: brendancboyle/send-keys-native-windows
           token: ${{ secrets.GH_TOKEN }}
           path: send-keys-native-windows
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
       - name: Install (compiles the native addon for the Electron ABI)
         working-directory: upr-desktop
         run: npm install
