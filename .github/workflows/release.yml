@@ -113,10 +113,14 @@ jobs:
       - name: Install (compiles the native addon for the Electron ABI)
         working-directory: upr-desktop
         run: npm install --include=optional
-      - name: Verify Windows native dependency installed
+      - name: Install Windows native dependency
         working-directory: upr-desktop
         shell: pwsh
         run: |
+          # npm 11 on the hosted Windows runner can skip this local optional
+          # dependency even with --include=optional. Install the checked-out
+          # sibling explicitly so electron-builder can package and rebuild it.
+          npm install --no-save ../send-keys-native-windows
           node -e "require.resolve('send-keys-native-windows')"
       - name: Build
         working-directory: upr-desktop
