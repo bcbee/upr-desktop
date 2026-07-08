@@ -56,7 +56,7 @@ async function checkForUpdatesManually(): Promise<void> {
 
   manualUpdateCheckInProgress = true
   try {
-    const outcome = await waitForManualUpdateOutcome()
+    const outcome = await resolveManualUpdateOutcome()
     if (outcome === 'update-not-available') {
       await dialog.showMessageBox({
         type: 'info',
@@ -86,51 +86,17 @@ async function checkForUpdatesManually(): Promise<void> {
   }
 }
 
-function waitForManualUpdateOutcome(): Promise<ManualUpdateOutcome> {
-  return new Promise((resolve, reject) => {
-    let settled = false
-
-    const cleanup = (): void => {
-      autoUpdater.removeListener('update-available', onUpdateAvailable)
-      autoUpdater.removeListener('update-not-available', onUpdateNotAvailable)
-      autoUpdater.removeListener('error', onError)
-    }
-
-    const settle = (outcome: ManualUpdateOutcome): void => {
-      if (settled) return
-      settled = true
-      cleanup()
-      resolve(outcome)
-    }
-
-    const fail = (error: unknown): void => {
-      if (settled) return
-      settled = true
-      cleanup()
-      reject(error)
-    }
-
-    const onUpdateAvailable = (): void => settle('update-available')
-    const onUpdateNotAvailable = (): void => settle('update-not-available')
-    const onError = (error: Error): void => fail(error)
-
-    autoUpdater.once('update-available', onUpdateAvailable)
-    autoUpdater.once('update-not-available', onUpdateNotAvailable)
-    autoUpdater.once('error', onError)
-
-    try {
-      autoUpdater.checkForUpdates().then(
-        result => {
-          if (result === null) {
-            settle('update-not-available')
-          }
-        },
-        fail
-      )
-    } catch (error) {
-      fail(error)
-    }
-  })
+// Derive the outcome from the value checkForUpdates() resolves to, not from the
+// one-shot 'update-available'/'update-not-available' events. electron-updater
+// caches an in-flight check (AppUpdater.checkForUpdatesPromise): after launch's
+// checkForUpdatesAndNotify() a manual check often piggybacks on that shared
+// promise, whose events already fired before our listeners attached. The
+// returned UpdateCheckResult still carries the authoritative isUpdateAvailable
+// flag (and the promise rejects on error), so it always settles.
+async function resolveManualUpdateOutcome(): Promise<ManualUpdateOutcome> {
+  const result = await autoUpdater.checkForUpdates()
+  // null means the updater is inactive (unpackaged); treated as up to date.
+  return result?.isUpdateAvailable ? 'update-available' : 'update-not-available'
 }
 
 function formatError(error: unknown): string {
