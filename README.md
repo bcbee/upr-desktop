@@ -95,6 +95,17 @@ The mac **zip target is required** for macOS auto‑update — a dmg‑only buil
 not update. A new release's version must be strictly greater than the installed
 one.
 
+> **Do not use `electron-builder` 26.15.0 or 26.15.1.** Those releases bundle
+> 7‑Zip 24.09, which dereferences symlinks when building the macOS `.zip`. That
+> collapses the `Electron Framework.framework` symlink farm (`Versions/Current`,
+> and the top‑level `Electron Framework`/`Resources`/`Libraries`/`Helpers`) into
+> duplicated real copies — tripling the app to ~800 MB and breaking the code
+> signature (`codesign`: "bundle format is ambiguous"), so Squirrel.Mac rejects
+> the update and macOS reports the app as "damaged and can't be opened." It ships
+> fine but every macOS auto‑update fails. Fixed in **26.15.2+**
+> ([electron-builder#9847](https://github.com/electron-userland/electron-builder/pull/9847));
+> keep the pin at ≥ 26.15.2.
+
 ## Release process
 
 Bump `version` in `package.json`, commit, and push a matching tag
