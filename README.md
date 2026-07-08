@@ -67,8 +67,11 @@ npm run typecheck    # tsc for main/preload and renderer
 
 ```bash
 npm run build        # electron-vite build → out/
+npm run build:bridge # electron-vite build --mode bridge → out/ (v1.3.x migration notice)
 npm run package      # build + electron-builder (no publish) → release/
 npm run release      # build + electron-builder --publish always (GitHub Releases)
+npm run package:bridge # bridge build + unsigned bridge packaging (no publish)
+npm run release:bridge # bridge build + unsigned bridge publish (GitHub Releases)
 ```
 
 `electron-builder.yml` holds the packaging config (appId
@@ -112,20 +115,10 @@ so we migrate in two tracks:
    `1.3.x` tags). Attach both platforms' artifacts to the same `v1.3.2` GitHub
    release.
 
-   On macOS:
+   On each OS:
 
    ```bash
-   npm run build:bridge   # electron-vite build --mode bridge (shows the macOS notice)
-   CSC_IDENTITY_AUTO_DISCOVERY=false npx electron-builder --mac \
-     --publish always \
-     --config.mac.notarize=false --config.mac.hardenedRuntime=false
-   ```
-
-   On Windows (the migration notice is macOS‑only, so the plain build is fine):
-
-   ```powershell
-   npm run build
-   npx electron-builder --win --publish always
+   npm run release:bridge
    ```
 
 2. **Signed line — `2.0.0`, signed + notarized.** Bump `version` to `2.0.0`,

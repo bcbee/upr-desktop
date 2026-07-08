@@ -28,6 +28,8 @@
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "package": "npm run build && electron-builder --publish never",
+    "package:bridge": "npm run build:bridge && electron-builder --config electron-builder.bridge.yml --publish never",
+    "release:bridge": "npm run build:bridge && electron-builder --config electron-builder.bridge.yml --publish always",
     "release": "npm run build && electron-builder --publish always"
   },
   "dependencies": {
