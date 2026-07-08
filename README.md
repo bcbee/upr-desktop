@@ -104,15 +104,15 @@ The previously shipped build (v1.3.1) was **unsigned** on macOS. Squirrel.Mac
 refuses to apply an update from an unsigned app to a newly signed+notarized one,
 so we migrate in two tracks:
 
-1. **Transitional bridge — `1.3.2`, unsigned.** The rewrite, version‑stamped
-   1.3.2 and built without signing/notarization, published to the GitHub
+1. **Transitional bridge — `1.3.3`, unsigned.** The rewrite, version‑stamped
+   1.3.3 and built without signing/notarization, published to the GitHub
    auto‑update feed. Windows installs update to it seamlessly; macOS installs
    attempt it (best‑effort) and, on macOS, show an in‑app notice directing the
    user to download the signed build from the website.
 
    The bridge is built **locally, once per OS** (the Windows native addon can
    only compile on Windows, and the release workflow deliberately refuses
-   `1.3.x` tags). Attach both platforms' artifacts to the same `v1.3.2` GitHub
+   `1.3.x` tags). Attach both platforms' artifacts to the same `v1.3.3` GitHub
    release.
 
    On each OS:

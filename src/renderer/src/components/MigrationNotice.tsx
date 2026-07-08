@@ -1,6 +1,6 @@
 import { Modal } from './Modal'
 
-// Shown only in the unsigned 1.3.2 bridge build on macOS: directs users to the
+// Shown only in the unsigned 1.3.3 bridge build on macOS: directs users to the
 // signed build on the website so auto-update continuity is preserved going forward.
 export function MigrationNotice(): React.JSX.Element {
   return (

@@ -11,7 +11,7 @@ name: release
 #     MAC_CSC_KEY_PASSWORD           password for that .p12
 #     APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID   notarization creds
 #
-# This builds the SIGNED release line. The one-off unsigned 1.3.2 bridge is built
+# This builds the SIGNED release line. The one-off unsigned 1.3.3 bridge is built
 # locally — see the README "Release process" section.
 
 on:
