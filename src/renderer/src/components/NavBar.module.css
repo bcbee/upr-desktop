@@ -1,0 +1,50 @@
+.navBar {
+  position: relative;
+  background: #340636;
+  text-align: center;
+  margin-bottom: 10px;
+  color: white;
+}
+
+.navBar p {
+  margin: 0;
+  padding: 15px;
+}
+
+.backButton {
+  position: absolute;
+  inset-block: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 5px;
+}
+
+.backButton button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+  background: none;
+  border: none;
+  height: 50px;
+  cursor: pointer;
+}
+
+.backButton span {
+  font-size: 18px;
+}
+
+.closeButton {
+  position: absolute;
+  padding: 5px;
+  right: 0;
+}
+
+.closeButton button {
+  color: white;
+  background: none;
+  border: none;
+  height: 50px;
+  width: 50px;
+  cursor: pointer;
+}
